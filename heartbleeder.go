@@ -31,7 +31,7 @@ func main() {
 		os.Exit(0)
 	}()
 
-	_, _, err = c.Heartbeat(32, nil)
+	_, res, err = c.Heartbeat(32, nil)
 	switch err {
 	case nil:
 		fmt.Printf("INSECURE - %s has the heartbeat extension enabled and is vulnerable\n", host)
@@ -42,4 +42,5 @@ func main() {
 		fmt.Printf("SECURE - %s has heartbeat extension enabled but is not vulnerable\n", host)
 		fmt.Printf("This error happened while processing the heartbeat (almost certainly a good thing): %q\n", err)
 	}
+    fmt.Printf("%s\n", res)
 }
